@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدونات فخري | Fakhri Blogs</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Tajawal', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .dark-mode {
+            background-color: #111827;
+            color: #f9fafb;
+        }
+        
+        .dark-mode .bg-white {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+        }
+        
+        .dark-mode .text-gray-800 {
+            color: #f9fafb !important;
+        }
+        
+        .dark-mode .text-gray-600 {
+            color: #d1d5db !important;
+        }
+
+        .dark-mode .bg-gray-50 {
+            background-color: #374151 !important;
+        }
+
+        .dark-mode input, .dark-mode textarea, .dark-mode select {
+            background-color: #374151;
+            color: white;
+            border-color: #4b5563;
+        }
+
+        /* Views management */
+        .view { display: none; }
+        .view.active { display: block; }
+        
+        /* Modals */
+        .modal { display: none; }
+        .modal.active { display: flex; }
+
+        .compte-active {
+            text-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen relative" id="bodyElement">
+
+    <!-- Theme Toggle (Global) -->
+    <button onclick="toggleTheme()" class="fixed top-4 left-4 z-50 p-3 rounded-full bg-primary text-white shadow-lg hover:opacity-90">
+        <i class="fas fa-moon" id="themeIcon"></i>
+    </button>
+
+    <!-- ========================================== -->
+    <!-- 1. LOGIN VIEW -->
+    <!-- ========================================== -->
+    <div id="loginView" class="view active min-h-screen flex flex-col items-center justify-center p-4">
+        <div class="text-center mb-8">
+            <h1 class="text-5xl font-bold text-primary mb-2">مدونات فخري</h1>
+            <h2 class="text-3xl font-semibold text-gray-600">Fakhri Blogs</h2>
+        </div>
+
+        <div class="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 w-full max-w-md">
+            <div class="text-sm font-bold text-center text-primary mb-6 p-3 bg-blue-50 rounded-lg">
+                هذا الكود خاص بحسابك فقط
+            </div>
+            
+            <form onsubmit="handleLogin(event)" class="space-y-6">
+                <input type="text" id="loginCode" placeholder="أدخل الكود الخاص بك" 
+                       class="w-full text-center text-xl p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" required>
+                
+                <button type="submit" id="loginBtn" class="w-full bg-primary text-white text-xl font-bold py-4 rounded-lg hover:opacity-90 transition shadow-lg flex items-center justify-center gap-2">
+                    <span>دخول الآن</span>
+                    <i id="loginSpinner" class="fas fa-spinner fa-spin hidden"></i>
+                </button>
+            </form>
+            
+            <div class="mt-4 text-center text-xs text-gray-400">
+                (للدخول كمدير استخدم: admin)
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 2. ADMIN DASHBOARD VIEW -->
+    <!-- ========================================== -->
+    <div id="adminView" class="view min-h-screen flex flex-col">
+        <!-- Admin Header -->
+        <header class="bg-white shadow-sm p-4 sticky top-0 z-40">
+            <div class="max-w-6xl mx-auto flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-primary">لوحة تحكم المدير</h1>
+                <div class="flex gap-4">
+                    <button onclick="logout()" class="text-red-500 hover:bg-red-50 p-2 rounded-lg font-bold">
+                        <i class="fas fa-sign-out-alt ml-1"></i> خروج
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Admin Nav -->
+        <div class="bg-primary text-white p-2">
+            <div class="max-w-6xl mx-auto flex gap-2 overflow-x-auto">
+                <button onclick="showAdminTab('codesTab')" class="admin-tab-btn bg-white/20 px-4 py-2 rounded font-bold" data-target="codesTab">الأكواد</button>
+                <button onclick="showAdminTab('contentTab')" class="admin-tab-btn px-4 py-2 rounded font-bold hover:bg-white/10" data-target="contentTab">المحتوى</button>
+                <button onclick="showAdminTab('blogsTab')" class="admin-tab-btn px-4 py-2 rounded font-bold hover:bg-white/10" data-target="blogsTab">المدونات</button>
+                <button onclick="showAdminTab('settingsTab')" class="admin-tab-btn px-4 py-2 rounded font-bold hover:bg-white/10" data-target="settingsTab">الإعدادات</button>
+            </div>
+        </div>
+
+        <div class="flex-1 max-w-6xl mx-auto w-full p-4 md:p-8">
+            
+            <!-- Codes Tab -->
+            <div id="codesTab" class="admin-tab active space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-gray-100 gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold">إدارة الأكواد</h2>
+                        <p class="text-accent font-bold mt-1 bg-gray-900 inline-block px-3 py-1 rounded-full text-sm compte-active">
+                            الحسابات النشطة: <span id="activeCount">0</span>
+                        </p>
+                    </div>
+                    <div class="flex gap-3 w-full sm:w-auto">
+                        <button onclick="generateCode()" class="flex-1 bg-primary text-white px-6 py-3 rounded-lg font-bold shadow hover:opacity-90">
+                            توليد كود جديد
+                        </button>
+                        <button onclick="deactivateAllCodes()" class="flex-1 bg-red-600 text-white px-6 py-3 rounded-lg font-bold shadow hover:opacity-90">
+                            تصفير الأكواد
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <table class="w-full text-right">
+                        <thead class="bg-gray-50 border-b border-gray-100">
+                            <tr>
+                                <th class="p-4">الكود</th>
+                                <th class="p-4">الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="codesTableBody" class="divide-y divide-gray-100">
+                            <!-- Codes will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Content Tab -->
+            <div id="contentTab" class="admin-tab hidden space-y-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-bold mb-4">إنشاء وحدة جديدة</h2>
+                    <form onsubmit="createUnit(event)" class="flex flex-col sm:flex-row gap-4">
+                        <input type="text" id="unitTitle" placeholder="اسم الوحدة" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-primary" required>
+                        <input type="url" id="unitBgImage" placeholder="رابط صورة الخلفية الخافتة" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-primary">
+                        <button type="submit" class="bg-primary text-white px-6 py-3 rounded-lg font-bold shadow hover:opacity-90">
+                            إنشاء
+                        </button>
+                    </form>
+                </div>
+
+                <div id="adminUnitsContainer" class="space-y-4">
+                    <!-- Units will be injected here -->
+                </div>
+            </div>
+
+            <!-- Blogs Tab -->
+            <div id="blogsTab" class="admin-tab hidden space-y-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-bold mb-4">كتابة مدونة جديدة</h2>
+                    <textarea id="newBlogContent" placeholder="اكتب مدونتك هنا..." class="w-full h-32 p-4 border border-gray-300 rounded-lg focus:outline-none focus:border-primary resize-none mb-4"></textarea>
+                    <button onclick="postBlog()" class="bg-primary text-white px-8 py-3 rounded-lg font-bold shadow hover:opacity-90">
+                        نشر
+                    </button>
+                </div>
+
+                <div id="adminBlogsContainer" class="space-y-4">
+                    <!-- Blogs will be injected here -->
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settingsTab" class="admin-tab hidden space-y-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-bold mb-6">إعدادات حساب التلميذ</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block font-bold mb-2">رابط صورة الغلاف العلوية (Couverture)</label>
+                            <input type="url" id="settingCoverImage" placeholder="https://..." class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-primary" onchange="saveSettings()">
+                        </div>
+                        
+                        <div>
+                            <label class="block font-bold mb-2">رابط صورة الخلفية الخافتة للتطبيق</label>
+                            <input type="url" id="settingBgImage" placeholder="https://..." class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-primary" onchange="saveSettings()">
+                        </div>
+
+                        <div class="p-4 bg-blue-50 text-primary rounded-lg text-sm font-bold">
+                            يتم الحفظ تلقائياً عند تغيير الروابط
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 3. STUDENT DASHBOARD VIEW -->
+    <!-- ========================================== -->
+    <div id="studentView" class="view min-h-screen flex flex-col bg-cover bg-center bg-fixed" style="background-color: #f9fafb;">
+        <!-- Cover Image -->
+        <div id="studentCover" class="w-full h-48 bg-gray-300 bg-cover bg-center hidden"></div>
+
+        <!-- Student Header -->
+        <header class="bg-white/90 backdrop-blur shadow-sm p-4 sticky top-0 z-40">
+            <div class="max-w-6xl mx-auto flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <h1 class="text-2xl font-bold text-primary">مدونات فخري</h1>
+                    <span class="text-accent font-bold bg-gray-900 px-3 py-1 rounded-full text-xs compte-active hidden sm:block">
+                        <span class="inline-block w-2 h-2 rounded-full bg-accent mr-1 animate-pulse"></span>
+                        Compte Activé
+                    </span>
+                </div>
+                <button id="mobileMenuBtn" onclick="toggleMobileMenu()" class="sm:hidden text-2xl text-primary">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <nav id="studentNav" class="hidden sm:flex gap-2">
+                    <button onclick="showStudentTab('studentContentTab')" class="student-tab-btn bg-primary text-white px-4 py-2 rounded font-bold" data-target="studentContentTab">المحتوى</button>
+                    <button onclick="showStudentTab('studentBlogsTab')" class="student-tab-btn text-primary hover:bg-gray-100 px-4 py-2 rounded font-bold" data-target="studentBlogsTab">المدونات</button>
+                    <button onclick="showStudentTab('studentSettingsTab')" class="student-tab-btn text-primary hover:bg-gray-100 px-4 py-2 rounded font-bold" data-target="studentSettingsTab">الإعدادات</button>
+                    <button onclick="logout()" class="text-red-500 hover:bg-red-50 px-4 py-2 rounded font-bold border border-red-200 ml-2">خروج</button>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Mobile Nav Menu -->
+        <div id="mobileNavMenu" class="hidden sm:hidden bg-white shadow-lg absolute w-full z-50 border-b border-gray-200">
+            <div class="flex flex-col p-4 space-y-2">
+                <button onclick="showStudentTab('studentContentTab'); toggleMobileMenu()" class="text-right p-3 rounded font-bold text-primary bg-blue-50">المحتوى</button>
+                <button onclick="showStudentTab('studentBlogsTab'); toggleMobileMenu()" class="text-right p-3 rounded font-bold text-primary hover:bg-gray-50">المدونات</button>
+                <button onclick="showStudentTab('studentSettingsTab'); toggleMobileMenu()" class="text-right p-3 rounded font-bold text-primary hover:bg-gray-50">الإعدادات</button>
+                <button onclick="logout()" class="text-right p-3 rounded font-bold text-red-500 mt-4 border-t border-gray-100">تسجيل الخروج</button>
+            </div>
+        </div>
+
+        <div class="flex-1 w-full relative z-10 p-4 md:p-8">
+            <div class="max-w-6xl mx-auto">
+                
+                <!-- Content Tab -->
+                <div id="studentContentTab" class="student-tab active">
+                    
+                    <!-- Units Grid (Visible by default) -->
+                    <div id="studentUnitsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Student units will be injected here -->
+                    </div>
+
+                    <!-- Inside a Unit (Hidden by default) -->
+                    <div id="studentUnitDetails" class="hidden space-y-8">
+                        <button onclick="backToUnits()" class="bg-white border border-gray-200 shadow-sm text-primary px-4 py-2 rounded-lg font-bold hover:bg-gray-50">
+                            <i class="fas fa-arrow-right ml-2"></i> عودة للوحدات
+                        </button>
+                        <h2 id="activeUnitTitle" class="text-3xl font-bold text-primary bg-white/80 inline-block px-4 py-2 rounded-lg">عنوان الوحدة</h2>
+                        
+                        <!-- Root Buttons (Vertical/Grid) -->
+                        <div id="rootButtonsContainer" class="flex flex-wrap gap-4">
+                            <!-- Root buttons injected here -->
+                        </div>
+
+                        <!-- Specific/Child Buttons (Horizontal chain) -->
+                        <div id="childButtonsContainer" class="hidden bg-white/90 p-6 rounded-xl shadow-lg border border-gray-100 w-full overflow-x-auto">
+                            <div class="flex gap-4 min-w-max" id="childButtonsInner">
+                                <!-- Child buttons injected here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Blogs Tab -->
+                <div id="studentBlogsTab" class="student-tab hidden max-w-2xl mx-auto space-y-6">
+                    <div id="studentBlogsContainer" class="space-y-6">
+                        <!-- Student blogs injected here -->
+                    </div>
+                </div>
+
+                <!-- Settings Tab -->
+                <div id="studentSettingsTab" class="student-tab hidden max-w-xl mx-auto">
+                    <div class="bg-white p-8 rounded-xl shadow-md border border-gray-100 text-center space-y-8">
+                        <div class="inline-block px-6 py-3 bg-gray-900 rounded-full border border-gray-700 shadow-lg mb-4">
+                            <span class="text-accent font-bold text-xl compte-active flex items-center gap-3">
+                                <span class="w-3 h-3 rounded-full bg-accent animate-pulse"></span>
+                                Compte Activé
+                            </span>
+                        </div>
+                        <p class="text-gray-500 font-bold">حسابك مفعل ونشط ومربوط بهذا الجهاز فقط.</p>
+                        
+                        <div class="border-t border-gray-100 pt-8">
+                            <button onclick="toggleTheme()" class="bg-primary text-white px-8 py-4 rounded-xl font-bold text-xl shadow-lg hover:opacity-90 w-full flex justify-center items-center gap-3">
+                                <i class="fas fa-adjust"></i>
+                                تبديل وضعية الليل والنهار
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- MODALS (Popups for Content Creation & Viewing) -->
+    <!-- ========================================== -->
+    
+    <!-- Admin: Add Content Modal -->
+    <div id="addContentModal" class="modal fixed inset-0 bg-black/60 z-50 items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="text-2xl font-bold text-primary">إضافة محتوى للزر</h3>
+                <button onclick="closeModal('addContentModal')" class="text-gray-400 hover:text-red-500 text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 space-y-6">
+                <input type="hidden" id="activeButtonIdForContent">
+                
+                <div>
+                    <label class="block font-bold mb-2">نوع المحتوى</label>
+                    <select id="contentTypeSelect" onchange="toggleContentInputs()" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-primary font-bold">
+                        <option value="text">نص منسق</option>
+                        <option value="image">صورة (رابط)</option>
+                        <option value="pdf">ملف PDF (رابط)</option>
+                        <option value="video">فيديو (رابط)</option>
+                        <option value="quiz">كويز تفاعلي</option>
+                    </select>
+                </div>
+
+                <!-- Text Input -->
+                <div id="inputGroup_text" class="content-input-group">
+                    <label class="block font-bold mb-2">النص</label>
+                    <div class="mb-2 flex gap-2 border border-gray-300 p-2 rounded-t-lg bg-gray-50">
+                        <button type="button" class="p-2 hover:bg-gray-200 rounded font-bold" onclick="document.execCommand('bold',false,null)"><b>B</b></button>
+                        <button type="button" class="p-2 hover:bg-gray-200 rounded font-bold" onclick="document.execCommand('underline',false,null)"><u>U</u></button>
+                        <input type="color" onchange="document.execCommand('foreColor',false,this.value)" class="h-10 w-10 p-0 border-0">
+                    </div>
+                    <div id="richTextEditor" contenteditable="true" class="w-full h-48 p-4 border border-gray-300 border-t-0 rounded-b-lg focus:outline-none overflow-y-auto bg-white"></div>
+                </div>
+
+                <!-- URL Input (Image, PDF, Video) -->
+                <div id="inputGroup_url" class="content-input-group hidden">
+                    <label class="block font-bold mb-2">الرابط (URL)</label>
+                    <input type="url" id="contentUrlInput" placeholder="https://..." class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-primary text-left" dir="ltr">
+                </div>
+
+                <!-- Quiz Input -->
+                <div id="inputGroup_quiz" class="content-input-group hidden space-y-4">
+                    <div>
+                        <label class="block font-bold mb-2">السؤال</label>
+                        <input type="text" id="quizQuestion" class="w-full p-3 border border-gray-300 rounded-lg">
+                    </div>
+                    <div id="quizOptionsContainer" class="space-y-3">
+                        <label class="block font-bold mb-2">الخيارات (اختر الإجابة الصحيحة)</label>
+                        <!-- Options generated by JS -->
+                    </div>
+                    <button type="button" onclick="addQuizOptionInput()" class="text-primary font-bold border border-primary px-4 py-2 rounded hover:bg-blue-50">
+                        + إضافة خيار
+                    </button>
+                </div>
+
+            </div>
+            <div class="p-6 border-t border-gray-100">
+                <button onclick="saveContent()" class="w-full bg-primary text-white py-4 rounded-xl font-bold text-xl shadow hover:opacity-90">حفظ المحتوى</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student: Content Viewer Modal (Image, Video, Text, Quiz) -->
+    <div id="contentViewerModal" class="modal fixed inset-0 z-50 items-center justify-center p-4" style="background-color: rgba(0,0,0,0.85);">
+        <button onclick="closeModal('contentViewerModal')" class="absolute top-4 right-4 text-white text-4xl hover:text-red-500 z-[60]"><i class="fas fa-times"></i></button>
+        
+        <div id="viewerContainer" class="w-full max-w-5xl max-h-[90vh] flex items-center justify-center overflow-auto relative">
+            <!-- Content injected here -->
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- JAVASCRIPT LOGIC -->
+    <!-- ========================================== -->
+<script>
+        const SUPABASE_URL = 'https://jtggworuxaxezseytyjf.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0Z2d3b3J1eGF4ZXpzZXl0eWpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1ODI0ODYsImV4cCI6MjEwMTE1ODQ4Nn0.JHJxYbclzxdC2nBq7F9KcDh3GCZf7k40yW3Da6Q3Xac';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUserRole = null; 
+        let currentUser = null;
+        let isDarkMode = localStorage.getItem('fakhri_theme') === 'dark';
+
+        if(isDarkMode) document.documentElement.classList.add('dark-mode');
+
+        // Check session on load
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user) {
+                checkUserRoleAndRedirect(session.user);
+            }
+        });
+
+        // Setup Realtime
+        supabase.channel('public-db-changes')
+            .on('postgres_changes', { event: '*', schema: 'public' }, payload => {
+                if (currentUserRole === 'admin') {
+                    if (['login_codes'].includes(payload.table)) renderAdminCodes();
+                    if (['units', 'buttons', 'contents'].includes(payload.table)) renderAdminUnits();
+                    if (['blogs', 'blog_comments'].includes(payload.table)) renderAdminBlogs();
+                } else if (currentUserRole === 'student') {
+                    if (['units', 'buttons', 'contents'].includes(payload.table)) {
+                        fetchStudentData().then(() => renderStudentUnits());
+                    }
+                    if (['blogs', 'blog_likes', 'blog_comments'].includes(payload.table)) renderStudentBlogs();
+                    if (['app_settings'].includes(payload.table)) applyStudentSettings();
+                }
+            }).subscribe();
+
+        async function checkUserRoleAndRedirect(user) {
+            currentUser = user;
+            const { data: adminData } = await supabase.from('admin_users').select('id').eq('id', user.id).maybeSingle();
+            
+            if (adminData) {
+                currentUserRole = 'admin';
+                switchView('adminView');
+                renderAdminCodes();
+                renderAdminUnits();
+                renderAdminBlogs();
+                loadAdminSettings();
+            } else {
+                currentUserRole = 'student';
+                switchView('studentView');
+                applyStudentSettings();
+                await fetchStudentData();
+                renderStudentUnits();
+                renderStudentBlogs();
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const codeInput = document.getElementById('loginCode').value.trim();
+            const loginBtn = document.getElementById('loginBtn');
+            const spinner = document.getElementById('loginSpinner');
+            
+            if(!codeInput) return alert('أدخل الكود');
+
+            loginBtn.disabled = true;
+            spinner.classList.remove('hidden');
+
+            try {
+                if(codeInput === 'adminpassword123' || codeInput === 'admin') {
+                    const { error } = await supabase.auth.signInWithPassword({
+                        email: 'admin@fakhriblogs.com',
+                        password: 'adminpassword123'
+                    });
+                    if (error) throw error;
+                } else {
+                    const { data, error } = await supabase.functions.invoke("student_login", { body: { code: codeInput } });
+                    if (error) throw error;
+                    if (data.error) throw new Error(data.error);
+
+                    const { error: signInError } = await supabase.auth.signInWithPassword({
+                        email: data.email,
+                        password: codeInput,
+                    });
+                    if (signInError) throw signInError;
+                }
+            } catch (err) {
+                alert(err.message || 'فشل تسجيل الدخول');
+            } finally {
+                loginBtn.disabled = false;
+                spinner.classList.add('hidden');
+            }
+        }
+
+        async function logout() {
+            await supabase.auth.signOut();
+            currentUserRole = null;
+            currentUser = null;
+            document.getElementById('loginCode').value = '';
+            switchView('loginView');
+        }
+
+        function switchView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+        }
+
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            localStorage.setItem('fakhri_theme', isDarkMode ? 'dark' : 'light');
+            if(isDarkMode) {
+                document.documentElement.classList.add('dark-mode');
+            } else {
+                document.documentElement.classList.remove('dark-mode');
+            }
+        }
+
+        // --- ADMIN: CODES ---
+        function showAdminTab(tabId) {
+            document.querySelectorAll('.admin-tab').forEach(t => t.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+                btn.classList.remove('bg-white/20', 'bg-white');
+                if(btn.dataset.target === tabId) btn.classList.add('bg-white/20');
+            });
+        }
+
+        async function generateCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let code = '';
+            for(let i=0; i<8; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+            
+            const { error } = await supabase.from('login_codes').insert([{ code }]);
+            if (error) alert(error.message);
+            else renderAdminCodes();
+        }
+
+        async function deactivateAllCodes() {
+            if(!confirm('هل أنت متأكد من تصفير جميع الأكواد وإلغاء فاعليتها؟')) return;
+            const { error } = await supabase.from('login_codes').update({ is_active: false }).eq('is_active', true);
+            if (error) alert(error.message);
+            else renderAdminCodes();
+        }
+
+        async function renderAdminCodes() {
+            const { data: codes, error } = await supabase.from('login_codes').select('*').order('created_at', { ascending: false });
+            if (error) return;
+
+            const tbody = document.getElementById('codesTableBody');
+            const activeCount = codes.filter(c => c.is_active).length;
+            document.getElementById('activeCount').innerText = activeCount;
+            
+            tbody.innerHTML = codes.map(c => `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-4 font-mono font-bold text-lg">${c.code}</td>
+                    <td class="p-4">
+                        ${c.is_active 
+                            ? `<span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold shadow-sm">حساب نشط</span>` 
+                            : `<span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-bold shadow-sm">ملغى</span>`
+                        }
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // --- ADMIN: CONTENT ---
+        async function createUnit(e) {
+            e.preventDefault();
+            const title = document.getElementById('unitTitle').value;
+            const bgImg = document.getElementById('unitBgImage').value;
+            
+            const { data: units } = await supabase.from('units').select('order_index');
+            const order = units && units.length > 0 ? Math.max(...units.map(u => u.order_index)) + 1 : 0;
+
+            const { error } = await supabase.from('units').insert([{ title, bg_image_url: bgImg, order_index: order }]);
+            if (error) alert(error.message);
+            else {
+                document.getElementById('unitTitle').value = '';
+                document.getElementById('unitBgImage').value = '';
+                renderAdminUnits();
+            }
+        }
+
+        async function renderAdminUnits() {
+            const { data: units } = await supabase.from('units').select('*').order('order_index', { ascending: true });
+            const { data: buttons } = await supabase.from('buttons').select('*').order('order_index', { ascending: true });
+            const { data: contents } = await supabase.from('contents').select('*');
+            
+            if(!units || !buttons || !contents) return;
+
+            const container = document.getElementById('adminUnitsContainer');
+            
+            container.innerHTML = units.map(u => {
+                const rootBtns = buttons.filter(b => b.unit_id === u.id && !b.parent_button_id);
+                return `
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-4">
+                    <div class="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                        <h3 class="text-xl font-bold text-primary">${u.title}</h3>
+                        <button onclick="deleteUnit('${u.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded"><i class="fas fa-trash"></i></button>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex gap-2 mb-4">
+                            <input type="text" id="newBtnTitle_${u.id}" placeholder="اسم الزر" class="p-2 border border-gray-300 rounded flex-1">
+                            <select id="newBtnType_${u.id}" class="p-2 border border-gray-300 rounded font-bold">
+                                <option value="general">عام (يحتوي أزرار)</option>
+                                <option value="specific">خاص (يحتوي محتوى)</option>
+                            </select>
+                            <button onclick="addButton('${u.id}', null)" class="bg-primary text-white px-4 rounded font-bold">إضافة زر للوحدة</button>
+                        </div>
+                        <div class="space-y-2 pr-4 border-r-2 border-primary/20">
+                            ${rootBtns.map(btn => renderAdminButtonNode(btn, buttons, contents)).join('')}
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function renderAdminButtonNode(btn, allButtons, allContents) {
+            const childBtns = allButtons.filter(b => b.parent_button_id === btn.id);
+            const content = allContents.find(c => c.button_id === btn.id);
+            
+            let html = `
+            <div class="bg-white border border-gray-200 rounded-lg p-3 my-2 shadow-sm">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <span class="font-bold text-lg ${btn.type === 'general' ? 'text-primary' : 'text-gray-700'}">${btn.title}</span>
+                        <span class="text-xs px-2 py-1 rounded bg-gray-100 font-bold">${btn.type === 'general' ? 'عام' : 'خاص'}</span>
+                        ${content ? `<span class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800 font-bold">يحتوي: ${content.type}</span>` : ''}
+                    </div>
+                    <div class="flex gap-2">
+                        ${btn.type === 'specific' && !content ? `<button onclick="openAddContentModal('${btn.id}')" class="text-sm bg-blue-50 text-primary px-3 py-1 rounded font-bold hover:bg-blue-100">إضافة محتوى</button>` : ''}
+                        ${content ? `<button onclick="deleteContent('${content.id}')" class="text-sm bg-red-50 text-red-600 px-3 py-1 rounded font-bold">حذف المحتوى</button>` : ''}
+                        <button onclick="deleteButton('${btn.id}')" class="text-red-500 p-1"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            `;
+
+            if(btn.type === 'general') {
+                html += `
+                <div class="mt-3 pt-3 border-t border-gray-100">
+                    <div class="flex gap-2 mb-3">
+                        <input type="text" id="newBtnTitle_${btn.id}" placeholder="اسم الزر الداخلي" class="p-2 border border-gray-300 rounded flex-1 text-sm">
+                        <button onclick="addButton('${btn.unit_id}', '${btn.id}')" class="bg-gray-800 text-white px-3 rounded font-bold text-sm">إضافة زر داخلي (خاص)</button>
+                    </div>
+                    <div class="pr-6 border-r-2 border-gray-200 space-y-2">
+                        ${childBtns.map(child => renderAdminButtonNode(child, allButtons, allContents)).join('')}
+                    </div>
+                </div>
+                `;
+            }
+            html += `</div>`;
+            return html;
+        }
+
+        async function addButton(unitId, parentId) {
+            const titleInput = document.getElementById(`newBtnTitle_${parentId || unitId}`);
+            const typeSelect = document.getElementById(`newBtnType_${unitId}`); 
+            
+            const title = titleInput.value;
+            const type = parentId ? 'specific' : typeSelect.value; 
+
+            if(!title) return alert('أدخل اسم الزر');
+
+            const { data: existingBtns } = await supabase.from('buttons').select('order_index').eq(parentId ? 'parent_button_id' : 'unit_id', parentId || unitId);
+            const order = existingBtns && existingBtns.length > 0 ? Math.max(...existingBtns.map(b => b.order_index)) + 1 : 0;
+
+            const { error } = await supabase.from('buttons').insert([{ unit_id: unitId, parent_button_id: parentId, type, title, order_index: order }]);
+            if (error) alert(error.message);
+            else renderAdminUnits();
+        }
+
+        async function deleteUnit(id) {
+            if(!confirm('حذف الوحدة بالكامل؟')) return;
+            await supabase.from('units').delete().eq('id', id);
+            renderAdminUnits();
+        }
+
+        async function deleteButton(id) {
+            if(!confirm('حذف الزر؟')) return;
+            await supabase.from('buttons').delete().eq('id', id);
+            renderAdminUnits();
+        }
+
+        let quizOptionsCount = 2;
+
+        function openAddContentModal(buttonId) {
+            document.getElementById('activeButtonIdForContent').value = buttonId;
+            document.getElementById('addContentModal').classList.add('active');
+            toggleContentInputs();
+            renderQuizOptions();
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+            if(id === 'contentViewerModal') {
+                document.getElementById('viewerContainer').innerHTML = ''; 
+            }
+        }
+
+        function toggleContentInputs() {
+            const type = document.getElementById('contentTypeSelect').value;
+            document.querySelectorAll('.content-input-group').forEach(el => el.classList.add('hidden'));
+            
+            if(type === 'text') document.getElementById('inputGroup_text').classList.remove('hidden');
+            else if(type === 'quiz') document.getElementById('inputGroup_quiz').classList.remove('hidden');
+            else document.getElementById('inputGroup_url').classList.remove('hidden');
+        }
+
+        function renderQuizOptions() {
+            let html = '';
+            for(let i=0; i<quizOptionsCount; i++) {
+                html += `
+                <div class="flex items-center gap-3">
+                    <input type="radio" name="quizCorrect" value="${i}" class="w-5 h-5 cursor-pointer" ${i===0?'checked':''}>
+                    <input type="text" id="quizOpt_${i}" placeholder="الخيار ${i+1}" class="flex-1 p-2 border border-gray-300 rounded-lg focus:border-primary">
+                </div>`;
+            }
+            document.getElementById('quizOptionsContainer').innerHTML = html;
+        }
+
+        function addQuizOptionInput() {
+            quizOptionsCount++;
+            renderQuizOptions();
+        }
+
+        async function saveContent() {
+            const buttonId = document.getElementById('activeButtonIdForContent').value;
+            const type = document.getElementById('contentTypeSelect').value;
+            let data = {};
+
+            if(type === 'text') {
+                data.text = document.getElementById('richTextEditor').innerHTML;
+            } else if (type === 'quiz') {
+                data.question = document.getElementById('quizQuestion').value;
+                data.options = [];
+                const checkedRadio = document.querySelector('input[name="quizCorrect"]:checked');
+                const correctIdx = checkedRadio ? parseInt(checkedRadio.value) : 0;
+                for(let i=0; i<quizOptionsCount; i++) {
+                    const txt = document.getElementById(`quizOpt_${i}`).value;
+                    if(txt) data.options.push({ text: txt, isCorrect: i === correctIdx });
+                }
+            } else {
+                data.url = document.getElementById('contentUrlInput').value;
+            }
+
+            const { error } = await supabase.from('contents').insert([{ button_id: buttonId, type, data }]);
+            if (error) alert(error.message);
+            else {
+                closeModal('addContentModal');
+                renderAdminUnits();
+                document.getElementById('richTextEditor').innerHTML = '';
+                document.getElementById('contentUrlInput').value = '';
+                document.getElementById('quizQuestion').value = '';
+                quizOptionsCount = 2;
+            }
+        }
+
+        async function deleteContent(id) {
+            await supabase.from('contents').delete().eq('id', id);
+            renderAdminUnits();
+        }
+
+        // --- ADMIN: BLOGS & SETTINGS ---
+        async function postBlog() {
+            const text = document.getElementById('newBlogContent').value;
+            if(!text) return;
+            
+            const { error } = await supabase.from('blogs').insert([{ content: text }]);
+            if (error) alert(error.message);
+            else {
+                document.getElementById('newBlogContent').value = '';
+                renderAdminBlogs();
+            }
+        }
+
+        async function renderAdminBlogs() {
+            const { data: blogs } = await supabase.from('blogs').select('*').order('created_at', { ascending: false });
+            if(!blogs) return;
+
+            document.getElementById('adminBlogsContainer').innerHTML = blogs.map(b => `
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <p class="text-lg whitespace-pre-wrap font-medium">${b.content}</p>
+                    <div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-100 text-sm text-gray-500 font-bold">
+                        <span>${new Date(b.created_at).toLocaleDateString('ar-EG')}</span>
+                        <button onclick="deleteBlog('${b.id}')" class="text-red-500 hover:bg-red-50 px-3 py-1 rounded"><i class="fas fa-trash"></i> حذف</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function deleteBlog(id) {
+            if(!confirm('حذف المدونة؟')) return;
+            await supabase.from('blogs').delete().eq('id', id);
+            renderAdminBlogs();
+        }
+
+        async function loadAdminSettings() {
+            const { data } = await supabase.from('app_settings').select('*').eq('id', 1).maybeSingle();
+            if (data) {
+                document.getElementById('settingCoverImage').value = data.cover_image_url || '';
+                document.getElementById('settingBgImage').value = data.bg_image_url || '';
+            }
+        }
+
+        async function saveSettings() {
+            const s = {
+                cover_image_url: document.getElementById('settingCoverImage').value,
+                bg_image_url: document.getElementById('settingBgImage').value
+            };
+            await supabase.from('app_settings').upsert({ id: 1, ...s });
+            applyStudentSettings();
+        }
+
+        // --- STUDENT ---
+        let studentUnits = [];
+        let studentButtons = [];
+        let studentContents = [];
+
+        async function fetchStudentData() {
+            const [uRes, bRes, cRes] = await Promise.all([
+                supabase.from('units').select('*').order('order_index', { ascending: true }),
+                supabase.from('buttons').select('*').order('order_index', { ascending: true }),
+                supabase.from('contents').select('*')
+            ]);
+            studentUnits = uRes.data || [];
+            studentButtons = bRes.data || [];
+            studentContents = cRes.data || [];
+        }
+
+        async function applyStudentSettings() {
+            const { data: s } = await supabase.from('app_settings').select('*').eq('id', 1).maybeSingle();
+            if (!s) return;
+
+            const studentView = document.getElementById('studentView');
+            const cover = document.getElementById('studentCover');
+
+            if(s.bg_image_url) {
+                studentView.style.backgroundImage = `url('${s.bg_image_url}')`;
+            } else {
+                studentView.style.backgroundImage = 'none';
+            }
+
+            if(s.cover_image_url) {
+                cover.style.backgroundImage = `url('${s.cover_image_url}')`;
+                cover.classList.remove('hidden');
+            } else {
+                cover.classList.add('hidden');
+            }
+        }
+
+        function showStudentTab(tabId) {
+            document.querySelectorAll('.student-tab').forEach(t => t.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            document.querySelectorAll('.student-tab-btn').forEach(btn => {
+                btn.classList.remove('bg-primary', 'text-white', 'hover:bg-gray-100');
+                if(btn.dataset.target === tabId) {
+                    btn.classList.add('bg-primary', 'text-white');
+                } else {
+                    btn.classList.add('text-primary', 'hover:bg-gray-100');
+                }
+            });
+            
+            if(tabId === 'studentContentTab') backToUnits();
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileNavMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        function renderStudentUnits() {
+            const grid = document.getElementById('studentUnitsGrid');
+            
+            if(studentUnits.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center p-8 bg-white rounded-xl shadow-sm font-bold text-xl text-gray-500 border border-gray-100">لا توجد وحدات متاحة حاليا</div>';
+                return;
+            }
+
+            grid.innerHTML = studentUnits.map(u => `
+                <div onclick="openStudentUnit('${u.id}')" class="group relative h-48 md:h-64 rounded-2xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all border border-gray-200">
+                    <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" 
+                         style="background-image: url('${u.bg_image_url || 'https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?q=80&w=1000&auto=format&fit=crop'}'); opacity: 0.8"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-primary/90 to-transparent"></div>
+                    <div class="absolute inset-0 p-6 flex items-end">
+                        <h3 class="text-3xl font-extrabold text-white drop-shadow-lg">${u.title}</h3>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openStudentUnit(unitId) {
+            const unit = studentUnits.find(u => u.id === unitId);
+            
+            document.getElementById('studentUnitsGrid').classList.add('hidden');
+            document.getElementById('studentUnitDetails').classList.remove('hidden');
+            document.getElementById('activeUnitTitle').innerText = unit.title;
+
+            renderRootButtons(unitId);
+        }
+
+        function backToUnits() {
+            document.getElementById('studentUnitsGrid').classList.remove('hidden');
+            document.getElementById('studentUnitDetails').classList.add('hidden');
+            document.getElementById('childButtonsContainer').classList.add('hidden');
+            renderStudentUnits();
+        }
+
+        let activeGeneralBtnId = null;
+
+        function renderRootButtons(unitId) {
+            const rootBtns = studentButtons.filter(b => b.unit_id === unitId && !b.parent_button_id);
+            
+            document.getElementById('rootButtonsContainer').innerHTML = rootBtns.map(btn => {
+                if(btn.type === 'general') {
+                    return `<button onclick="toggleGeneralButton('${btn.id}')" id="btn_${btn.id}" class="root-btn bg-white text-primary border-2 border-primary hover:bg-blue-50 px-8 py-6 rounded-2xl text-2xl font-bold shadow-md transition-colors min-w-[200px] text-center">
+                        ${btn.title}
+                    </button>`;
+                } else {
+                    return renderSpecificButtonHTML(btn);
+                }
+            }).join('');
+            
+            document.getElementById('childButtonsContainer').classList.add('hidden');
+            activeGeneralBtnId = null;
+        }
+
+        function toggleGeneralButton(btnId) {
+            document.querySelectorAll('.root-btn').forEach(el => {
+                el.classList.remove('bg-primary', 'text-white');
+                el.classList.add('bg-white', 'text-primary');
+            });
+            const clickedBtn = document.getElementById(`btn_${btnId}`);
+            
+            if(activeGeneralBtnId === btnId) {
+                activeGeneralBtnId = null;
+                document.getElementById('childButtonsContainer').classList.add('hidden');
+            } else {
+                activeGeneralBtnId = btnId;
+                clickedBtn.classList.remove('bg-white', 'text-primary');
+                clickedBtn.classList.add('bg-primary', 'text-white');
+                
+                const childBtns = studentButtons.filter(b => b.parent_button_id === btnId);
+                const container = document.getElementById('childButtonsContainer');
+                const inner = document.getElementById('childButtonsInner');
+                
+                if(childBtns.length > 0) {
+                    inner.innerHTML = childBtns.map(b => renderSpecificButtonHTML(b)).join('');
+                    container.classList.remove('hidden');
+                } else {
+                    inner.innerHTML = '<span class="text-gray-500 font-bold p-4">لا توجد محتويات هنا بعد</span>';
+                    container.classList.remove('hidden');
+                }
+            }
+        }
+
+        function renderSpecificButtonHTML(btn) {
+            const content = studentContents.find(c => c.button_id === btn.id);
+            
+            if(!content) {
+                return `<button class="bg-gray-100 text-gray-400 px-6 py-4 rounded-xl text-xl font-bold shadow-inner cursor-not-allowed min-w-[150px] border border-gray-200">${btn.title}</button>`;
+            }
+
+            if(content.type === 'pdf') {
+                return `<button onclick="window.open('${content.data.url}', '_blank')" class="bg-white text-primary border border-gray-200 px-6 py-4 rounded-xl text-xl font-bold shadow-md hover:shadow-lg hover:-translate-y-1 transition-all min-w-[150px] relative overflow-hidden">
+                    <i class="fas fa-file-pdf text-red-500 opacity-20 absolute -left-2 -bottom-2 text-4xl"></i>
+                    <span class="relative z-10">${btn.title}</span>
+                </button>`;
+            }
+
+            if(content.type === 'video') {
+                return `<button onclick="openViewer('${content.id}')" class="bg-red-600 text-white px-8 py-4 rounded-xl text-xl font-bold shadow-lg hover:bg-red-700 hover:-translate-y-1 transition-all min-w-[180px] relative flex items-center justify-center gap-3">
+                    <i class="fas fa-play"></i>
+                    <span>مشاهدة الآن</span>
+                    <span class="absolute -top-3 -right-3 bg-white text-primary text-xs px-2 py-1 rounded shadow border border-gray-100">${btn.title}</span>
+                </button>`;
+            }
+
+            return `<button onclick="openViewer('${content.id}')" class="bg-white text-primary border border-gray-200 px-6 py-4 rounded-xl text-xl font-bold shadow-md hover:shadow-lg hover:-translate-y-1 transition-all min-w-[150px]">
+                ${btn.title}
+            </button>`;
+        }
+
+        function openViewer(contentId) {
+            const c = studentContents.find(x => x.id === contentId);
+            const container = document.getElementById('viewerContainer');
+            
+            if(c.type === 'image') {
+                container.innerHTML = `
+                <div class="w-full h-full flex items-center justify-center relative p-8">
+                    <img src="${c.data.url}" class="max-w-full max-h-[80vh] object-contain rounded shadow-2xl transition-transform" id="zoomableImg">
+                    <div class="absolute bottom-10 flex gap-4 bg-black/50 p-3 rounded-full backdrop-blur">
+                        <button onclick="zoomImg(0.2)" class="text-white text-2xl hover:text-accent w-10 h-10"><i class="fas fa-search-plus"></i></button>
+                        <button onclick="zoomImg(-0.2)" class="text-white text-2xl hover:text-accent w-10 h-10"><i class="fas fa-search-minus"></i></button>
+                        <button onclick="zoomImg(0, true)" class="text-white text-2xl hover:text-accent w-10 h-10"><i class="fas fa-redo"></i></button>
+                    </div>
+                </div>`;
+                window.currentZoom = 1;
+            } 
+            else if (c.type === 'video') {
+                container.innerHTML = `
+                <div class="w-full max-w-4xl aspect-video bg-black rounded-xl overflow-hidden shadow-2xl">
+                    <iframe src="${c.data.url}" class="w-full h-full border-0" allowfullscreen allow="autoplay; fullscreen"></iframe>
+                </div>`;
+            }
+            else if (c.type === 'text') {
+                container.innerHTML = `
+                <div class="bg-white w-full max-w-3xl rounded-xl p-8 shadow-2xl overflow-y-auto max-h-[80vh] text-right" dir="rtl">
+                    <div class="prose max-w-none text-xl leading-relaxed text-gray-800 font-medium">
+                        ${c.data.text || c.data.html}
+                    </div>
+                </div>`;
+            }
+            else if (c.type === 'quiz') {
+                window.currentQuiz = c.data;
+                renderQuizInteraction();
+            }
+
+            document.getElementById('contentViewerModal').classList.add('active');
+        }
+
+        window.currentZoom = 1;
+        function zoomImg(amount, reset=false) {
+            const img = document.getElementById('zoomableImg');
+            if(!img) return;
+            if(reset) window.currentZoom = 1;
+            else window.currentZoom += amount;
+            
+            if(window.currentZoom < 0.5) window.currentZoom = 0.5;
+            if(window.currentZoom > 4) window.currentZoom = 4;
+            
+            img.style.transform = `scale(${window.currentZoom})`;
+        }
+
+        function renderQuizInteraction() {
+            const q = window.currentQuiz;
+            const container = document.getElementById('viewerContainer');
+            
+            container.innerHTML = `
+            <div class="bg-white w-full max-w-2xl rounded-2xl p-10 shadow-2xl text-center">
+                <h2 class="text-3xl font-extrabold text-primary mb-10 leading-snug">${q.question}</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="quizButtonsArea">
+                    ${q.options.map((opt, i) => `
+                        <button onclick="handleQuizAnswer(${i})" id="quizBtn_${i}" class="p-6 text-xl font-bold border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                            ${opt.text}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>`;
+        }
+
+        function handleQuizAnswer(idx) {
+            const q = window.currentQuiz;
+            const isCorrect = q.options[idx].isCorrect;
+            const btn = document.getElementById(`quizBtn_${idx}`);
+            
+            document.querySelectorAll('#quizButtonsArea button').forEach(b => {
+                b.disabled = true;
+                b.classList.add('opacity-70');
+            });
+
+            btn.classList.remove('opacity-70', 'border-gray-200', 'hover:bg-gray-50');
+            
+            if(isCorrect) {
+                btn.classList.add('bg-green-500', 'text-white', 'border-green-600', 'opacity-100');
+                playAudioTone(true);
+            } else {
+                btn.classList.add('bg-red-500', 'text-white', 'border-red-600', 'opacity-100');
+                const correctIdx = q.options.findIndex(o => o.isCorrect);
+                const correctBtn = document.getElementById(`quizBtn_${correctIdx}`);
+                correctBtn.classList.remove('opacity-70', 'border-gray-200');
+                correctBtn.classList.add('bg-green-500', 'text-white', 'border-green-600', 'opacity-100');
+                playAudioTone(false);
+            }
+        }
+
+        function playAudioTone(isSuccess) {
+            try {
+                const actx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = actx.createOscillator();
+                const gain = actx.createGain();
+                osc.connect(gain);
+                gain.connect(actx.destination);
+                osc.type = isSuccess ? 'sine' : 'sawtooth';
+                osc.frequency.setValueAtTime(isSuccess ? 800 : 200, actx.currentTime);
+                if(isSuccess) {
+                    osc.frequency.setValueAtTime(1200, actx.currentTime + 0.1);
+                }
+                gain.gain.setValueAtTime(0.1, actx.currentTime);
+                osc.start();
+                gain.gain.exponentialRampToValueAtTime(0.00001, actx.currentTime + 0.5);
+                osc.stop(actx.currentTime + 0.5);
+            } catch(e) {}
+        }
+
+        async function renderStudentBlogs() {
+            const [bRes, cRes, lRes] = await Promise.all([
+                supabase.from('blogs').select('*').order('created_at', { ascending: false }),
+                supabase.from('blog_comments').select('*').order('created_at', { ascending: true }),
+                supabase.from('blog_likes').select('*')
+            ]);
+
+            const blogs = bRes.data || [];
+            const comments = cRes.data || [];
+            const likes = lRes.data || [];
+            const container = document.getElementById('studentBlogsContainer');
+            
+            if(blogs.length === 0) {
+                container.innerHTML = '<div class="text-center p-8 bg-white rounded-xl shadow-sm font-bold text-xl text-gray-500">لا توجد مدونات حاليا</div>';
+                return;
+            }
+
+            container.innerHTML = blogs.map(b => {
+                const bLikes = likes.filter(l => l.blog_id === b.id);
+                const bComments = comments.filter(c => c.blog_id === b.id);
+                const hasLiked = currentUser ? bLikes.some(l => l.user_id === currentUser.id) : false;
+
+                return `
+                <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+                    <div class="p-4 flex items-center gap-4 bg-gray-50 border-b border-gray-100">
+                        <div class="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xl">F</div>
+                        <div>
+                            <h4 class="font-bold text-lg text-primary">مدير الموقع (Fakhri)</h4>
+                            <p class="text-sm text-gray-500">${new Date(b.created_at).toLocaleString('ar-EG')}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6 text-xl leading-relaxed text-gray-800 whitespace-pre-wrap font-medium">
+                        ${b.content}
+                    </div>
+
+                    <div class="px-6 py-3 border-t border-gray-100 flex items-center gap-6 bg-gray-50/50">
+                        <button onclick="toggleLike('${b.id}', ${hasLiked})" class="${hasLiked ? 'text-primary' : 'text-gray-400 hover:text-primary'} font-bold hover:bg-blue-50 px-4 py-2 rounded-lg flex items-center gap-2 transition">
+                            <i class="fas fa-thumbs-up"></i> إعجاب (${bLikes.length})
+                        </button>
+                        <div class="text-gray-500 font-bold flex items-center gap-2">
+                            <i class="fas fa-comment"></i> التعليقات (${bComments.length})
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-gray-50 border-t border-gray-100 space-y-4">
+                        ${bComments.map(c => `
+                            <div class="flex gap-3">
+                                <div class="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center font-bold text-xs shrink-0"><i class="fas fa-user"></i></div>
+                                <div class="bg-white border border-gray-200 rounded-2xl rounded-tr-none px-4 py-2 text-md shadow-sm max-w-[85%]">
+                                    ${c.content}
+                                </div>
+                                ${currentUserRole === 'admin' || (currentUser && c.user_id === currentUser.id) ? `<button onclick="deleteComment('${c.id}')" class="text-red-400 hover:text-red-600 text-xs"><i class="fas fa-trash"></i></button>` : ''}
+                            </div>
+                        `).join('')}
+                        
+                        <div class="flex gap-2 mt-4 pt-2">
+                            <input type="text" id="comment_${b.id}" onkeypress="if(event.key === 'Enter') addComment('${b.id}')" placeholder="اكتب تعليقا..." class="flex-1 p-3 border border-gray-300 rounded-full focus:outline-none focus:border-primary shadow-inner text-sm">
+                            <button onclick="addComment('${b.id}')" class="bg-primary text-white w-12 h-12 rounded-full flex items-center justify-center hover:opacity-90 shadow-md">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        async function toggleLike(blogId, hasLiked) {
+            if(!currentUser) return;
+            if (hasLiked) {
+                await supabase.from('blog_likes').delete().eq('blog_id', blogId).eq('user_id', currentUser.id);
+            } else {
+                await supabase.from('blog_likes').insert([{ blog_id: blogId, user_id: currentUser.id }]);
+            }
+            renderStudentBlogs();
+        }
+
+        async function addComment(blogId) {
+            if(!currentUser) return;
+            const input = document.getElementById(`comment_${blogId}`);
+            if(!input.value.trim()) return;
+            
+            await supabase.from('blog_comments').insert([{ blog_id: blogId, user_id: currentUser.id, content: input.value }]);
+            input.value = '';
+            renderStudentBlogs();
+        }
+
+        async function deleteComment(commentId) {
+            if(!confirm('حذف التعليق؟')) return;
+            await supabase.from('blog_comments').delete().eq('id', commentId);
+            renderStudentBlogs();
+        }
+</script>
+</body>
+</html>
